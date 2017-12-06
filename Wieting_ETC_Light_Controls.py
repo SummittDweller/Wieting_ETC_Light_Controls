@@ -15,12 +15,12 @@ for serial port control code examples.
 
 """
 
-import os.path
 # import tkFileDialog
 # import subprocess
 # import spur  # use 'pip install spur' to install
-import webbrowser
 # import json
+import os.path
+import webbrowser
 import serial   # use 'pip install pyserial' to install
 from Tkinter import *  # use 'brew install homebrew/dupes/tcl-tk' to install
 
@@ -92,8 +92,6 @@ def gui():
 
     statusText.set("button_send_serial_callback is complete with ser of '{}'...".format(ser))
     message.configure(fg="dark green")
-    
-    
   
 # def button_browse_callback():
 #   """ What to do when the Browse button is pressed """
