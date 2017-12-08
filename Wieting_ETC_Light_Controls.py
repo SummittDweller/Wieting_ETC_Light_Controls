@@ -131,7 +131,7 @@ def gui():
   statusText = StringVar(root)
   statusText.set("Browse to open a file OR enter a Unison AV/Serial 1.0 command...")
   
-  label = Label(root, text="Enter a serial command (raw), fader level, or browse for a file:")
+  label = Label(root, text="Enter a serial command (raw), fader level (0 to 100), or browse for a file:")
   label.pack(padx=10)
   entry = Entry(root, width=80, justify='center')
   entry.pack(padx=10)
@@ -144,7 +144,7 @@ def gui():
   button_select_fader2 = Button(root, text="Set Fader for House Lights (2)", command=button_select_fader2_callback)
   button_select_fader3 = Button(root, text="Set Fader for Back of House (3)", command=button_select_fader3_callback)
   button_select_fader4 = Button(root, text="Set Fader for Stage/Wing Floods (4)", command=button_select_fader4_callback)
-  button_select_fader5 = Button(root, text="Set Fader for Spots 1 & 2 (5)", command=button_select_fader5_callback)
+  button_select_fader5 = Button(root, text="Set Fader for Spots 1 & 3 (5)", command=button_select_fader5_callback)
   button_select_fader6 = Button(root, text="Set Fader for Spots 2 & 4 (6)", command=button_select_fader6_callback)
   button_select_all_faders = Button(root, text="Set All Faders (1-6)", command=button_select_all_faders_callback)
   button_close_port = Button(root, text="Close the Serial Port", command=button_close_port_callback)
