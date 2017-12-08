@@ -19,10 +19,12 @@ for serial port control code examples.
 # import subprocess
 # import spur  # use 'pip install spur' to install
 # import json
+
 import os.path
 import webbrowser
 import serial   # use 'pip install pyserial' to install
 from Tkinter import *  # use 'brew install homebrew/dupes/tcl-tk' to install
+from time import sleep
 
 # import fileinput
 # import StringIO
@@ -49,50 +51,33 @@ def gui():
     message.configure(fg="red")
     message.update()
 
-    # Open port at '9600, 8, N, 1', no timeout
+    dev = "/dev/tty.usbserial"
 
-    ser = serial.Serial('/dev/ttyUSB0')  # open serial port
-    print(ser.name)  # check which port was really used
-    ser.write(b'hello')  # write a string
+    try:
+      ser = serial.Serial(dev, baudrate=115200, bytesize=8, parity='N', stopbits=1, xonxoff=1)  # open serial port
+    except IOError as e:
+      print "I/O error({0}): {1}".format(e.errno, e.strerror)
+    except:
+      print "Unexpected error:", sys.exc_info()[0]
+      raise
+
+    statusText.set("Serial port '{}' is open...".format(ser.port))   # the port ID
+    message.configure(fg="dark green")
+    message.update()
+
+    ser.write(format(target) + "\r\n")  # write a string
+    sleep(1)                            # wait one second
+    bytesToRead = ser.inWaiting()
+    result = ser.read(bytesToRead)
+
+    msg = "Sent '" + target + "' and response is: " + result
+    statusText.set(msg)
+    message.configure(fg="dark green")
+    message.update()
+
     ser.close()  # close port
 
-    # Open named port at '19200, 8, N, 1', 1s timeout
 
-    with serial.Serial('/dev/ttyS1', 19200, timeout=1) as ser:
-      x = ser.read()  # read one byte
-      s = ser.read(10)  # read up to ten bytes (timeout)
-      line = ser.readline()  # read a '\n' terminated line
-
-    # Open port at '38400, 8, E, 1', non-blocking HW handshaking
-
-    ser = serial.Serial('COM3', 38400, timeout=0,
-    parity = serial.PARITY_EVEN, rtscts = 1)
-    s = ser.read(100)  # read up to one hundred bytes or as much is in the buffer
-
-    # Configuring ports later
-
-    # Get a Serial instance and configure / open it later
-
-    ser = serial.Serial()
-    ser.baudrate = 19200
-    ser.port = 'COM1'
-    ser  # Serial < id = 0xa81c10, open = False > (port='COM1', baudrate=19200, bytesize=8, parity='N', stopbits=1, timeout=None, xonxoff=0, rtscts=0)"""
-    ser.open()
-    ser.is_open  # True
-    ser.close()
-    ser.is_open  # False
-
-    # Also supported with context manager
-
-    with serial.Serial() as ser:
-      ser.baudrate = 19200
-      ser.port = 'COM1'
-      ser.open()
-      ser.write(b'hello')
-
-    statusText.set("button_send_serial_callback is complete with ser of '{}'...".format(ser))
-    message.configure(fg="dark green")
-  
 # def button_browse_callback():
 #   """ What to do when the Browse button is pressed """
 #   filename = tkFileDialog.askopenfilename()
@@ -103,14 +88,14 @@ def gui():
   
   root = Tk()
   root.title("Wieting ETC Light Controls v1.0")
-  root.geometry("1000x350")
+  root.geometry("1000x500")
   frame = Frame(root)
   frame.pack()
   
   statusText = StringVar(root)
-  statusText.set("Browse to open a file OR choose an operation to perform.")
+  statusText.set("Browse to open a file OR enter a Unison AV/Serial 1.0 command...")
   
-  label = Label(root, text="Input or selected file/folder:")
+  label = Label(root, text="Serial command or selected file/folder:")
   label.pack(padx=10)
   entry = Entry(root, width=80, justify='center')
   entry.pack(padx=10)
