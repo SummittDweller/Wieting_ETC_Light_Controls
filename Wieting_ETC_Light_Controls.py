@@ -161,14 +161,17 @@ def gui():
 
   # --- Build the GUI ---------------------------------------------------------
   
-  root = Tk()
-  root.title("Wieting ETC Light Controls v1.0")
-  root.geometry("900x750")
+  window = Tk()
+  window.title("Wieting ETC Light Controls v1.0")
+  window.geometry("850x750")
   
-  topPanel = Frame(root, padx=5, pady=5)
-  topPanel.pack()
+  root = Frame(window, padx=10, pady=10)
+  root.pack()
   
-  fadersFrame = LabelFrame(topPanel, text="Zones", padx=5, pady=5)
+  panelFaders = Frame(root, padx=10, pady=10, relief=RAISED, bd=2)
+  panelFaders.pack()
+  
+  fadersFrame = LabelFrame(panelFaders, text="Zones", padx=5, pady=5)
   fadersFrame.pack(side=LEFT)
 
   for f in range(7):
@@ -179,41 +182,53 @@ def gui():
     faderScales[f].pack()
     setFaderButtons[f].pack()
 
-  presetsFrame = Frame(topPanel, padx=5, pady=5)
+  presetsFrame = Frame(panelFaders, padx=5, pady=5)
   presetsFrame.pack(side=RIGHT)
 
   for p in range(5):
     setPresetButtons.append(Button(presetsFrame, text=presetLabels[p], command=functools.partial(set_preset_callback, p, presetLabels)))
     setPresetButtons[p].pack()
     
-  botPanel = Frame(root, padx=5, pady=5)
-  botPanel.pack()
+  panelRaw = Frame(root, padx=5, pady=5, bd=5)
+  panelRaw.pack()
   
-  statusText = StringVar(botPanel)
+  statusText = StringVar(panelRaw)
   statusText.set("Browse to open a file OR enter a Unison AV/Serial 1.0 command...")
     
-  label = Label(botPanel, text="Enter a serial string (Raw Command) or Browse for a file to playback:", padx=10)
+  label = Label(panelRaw, text="Enter a serial string (Raw Command) or Browse for a file to playback:", padx=10)
   label.pack()
-  entry = Entry(botPanel, width=80, justify='center')
+  entry = Entry(panelRaw, width=96, justify='center')
   entry.pack()
   
-  button_send_raw = Button(botPanel, text="Send Raw Command", command=button_send_raw_callback)
+  panelRawSub = Frame(panelRaw, padx=5)
+  panelRawSub.pack()
+  
+  button_send_raw = Button(panelRawSub, text="Send Raw Command", command=button_send_raw_callback)
   button_send_raw.pack(side=LEFT)
-  button_browse = Button(botPanel, text="Browse", command=button_browse_callback)
+  button_browse = Button(panelRawSub, text="Browse", command=button_browse_callback)
   button_browse.pack(side=LEFT)
 
-  sep = Frame(botPanel, height=2, width=400, bg="black")
-  sep.pack()
+  sep = Frame(panelRaw, height=1, width=800, bg="black")
+  sep.pack(pady=10)
+
+  panelCMD = Frame(root, padx=5, bd=2)
+  panelCMD.pack()
   
-  button_close_port = Button(botPanel, text="Close the Serial Port", command=button_close_port_callback)
-  button_close_port.pack()
-  button_help = Button(botPanel, text="Help", command=button_help_callback)
+  button_close_port = Button(panelCMD, text="Close the Serial Port", command=button_close_port_callback)
+  button_close_port.pack(side=LEFT)
+  button_help = Button(panelCMD, text="Help", command=button_help_callback)
   button_help.pack(side=LEFT)
-  button_exit = Button(botPanel, text="Exit", command=sys.exit)
+  button_exit = Button(panelCMD, text="Exit", command=sys.exit)
   button_exit.pack(side=LEFT)
+
+  #sep = Frame(panelCMD, height=1, width=800, bg="black", pady=5)
+  #sep.pack(side=BOTTOM)
+
+  panelStatus = Frame(root, padx=5, pady=5)
+  panelStatus.pack()
   
-  message = Label(botPanel, textvariable=statusText, padx=10, pady=5)
-  message.pack(side=LEFT)
+  message = Label(panelStatus, textvariable=statusText, padx=10, pady=5)
+  message.pack()
   
   # --- Initialize the serial port ----------------------------------
     
