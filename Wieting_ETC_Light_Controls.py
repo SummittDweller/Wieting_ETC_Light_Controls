@@ -36,6 +36,36 @@ import functools
 from Tkinter import *  # use 'brew install homebrew/dupes/tcl-tk' to install
 from time import sleep
 
+# --- Helper functions
+
+def read_serial_response(ser):
+  sleep(1)  # wait one second
+  bytesToRead = ser.inWaiting()
+  result = ser.read(bytesToRead)
+  stripped = re.sub(r"\r\n", ", ", result)
+  return stripped
+
+def send_serial_string(ser, code, statusText, message, msg):
+  if ser:
+    try:
+      ser.write(code)
+      result = read_serial_response(ser)
+      m = msg
+      statusText.set(m + " Response is: {}".format(result))
+      message.configure(fg="dark green")
+      message.update()
+    except:
+      m = "Serial connection error: {}".format(sys.exc_info()[0])
+      statusText.set(m)
+      message.configure(fg="red")
+      message.update()
+  else:
+    stripped = re.sub(r"\r\n", "", code)
+    m = "The port is not open.  send_serial_string() called with code '{0}' and message:\n{1}".format(stripped, msg)
+    statusText.set(m)
+    message.configure(fg="red")
+    message.update()
+
 
 # --- Define the GUI -----------------------------------------------------------------
 
@@ -68,90 +98,35 @@ def gui():
     desc = re.sub(r"\n", " ", labels[fadr])
     lvl = faders[fadr].get()
     code = "SF{0}.{1}".format(fadr, lvl) + "\r\n"
-        
-    if ser:
-      try:
-        ser.write(code)
-        sleep(1)  # wait one second
-        bytesToRead = ser.inWaiting()
-        result = ser.read(bytesToRead)
-        msg = "Set Fader for '{0}' ({1}) to Level '{2}' and the response is: {3}".format(desc, fadr, lvl, result)
-        statusText.set(msg)
-        message.configure(fg="dark green")
-        message.update()
-      except:
-        msg = "Serial connection error: {}".format(sys.exc_info()[0])
-        statusText.set(msg)
-        message.configure(fg="red")
-        message.update()
-    else:
-      msg = "The port is not open.  set_fader_callback() called with arguments '{0}' and '{1}'.  Level = {2}".format(fadr, desc, lvl)
-    statusText.set(msg)
-    message.configure(fg="red")
-    message.update()
-
+    msg = "Set Fader for '{0}' to Level '{1}'.".format(desc, lvl)
+    send_serial_string(ser, code, statusText, message, msg)
 
   def set_preset_callback(preset, labels):
     p = preset + 1
     desc = re.sub(r"\n", " ", labels[preset])
     code = "SB{0}.2".format(p) + "\r\n"
-  
-    if ser:
-      try:
-        ser.write(code)
-        sleep(1)  # wait one second
-        bytesToRead = ser.inWaiting()
-        result = ser.read(bytesToRead)
-        msg = "Toggled Preset '{0}' ({1}) and the response is: {1}".format(desc, p, result)
-        statusText.set(msg)
-        message.configure(fg="dark green")
-        message.update()
-      except:
-        msg = "Serial connection error: {}".format(sys.exc_info()[0])
-        statusText.set(msg)
-        message.configure(fg="red")
-        message.update()
-    else:
-      msg = "The port is not open.  set_preset_callback() called with arguments '{0}' and '{1}'.".format(p, desc)
-      statusText.set(msg)
-      message.configure(fg="red")
-      message.update()
-
+    msg = "Toggled Preset '{0}'.".format(desc)
+    send_serial_string(ser, code, statusText, message, msg)
 
   def button_help_callback():
     filename = "./Wieting_ETC_Light_Controls.md.html"
     webbrowser.open('file://' + os.path.realpath(filename))
     statusText.set("The help file, 'Wieting_ETC_Light_Controls.md.html' should now be visible in a new browser tab.")
     message.configure(fg="dark green")
-
     
   def button_send_raw_callback():
     raw = entry.get()
     code = "{0}\r\n".format(raw)
-    try:
-      ser.write(code)
-      sleep(2)  # wait two seconds
-      bytesToRead = ser.inWaiting()
-      result = ser.read(bytesToRead)
-      msg = "Raw command '{0}' sent with response:\r\n{1}".format(raw, result)
-      statusText.set(msg)
-      message.configure(fg="dark green")
-      message.update()
-    except:
-      msg = "Serial connection error: {}".format(sys.exc_info()[0])
-      statusText.set(msg)
-      message.configure(fg="red")
-      message.update()
-
+    msg = "Raw command '{0}' sent.".format(raw)
+    send_serial_string(ser, code, statusText, message, msg)
 
   def button_close_port_callback():
     if ser:
       ser.close()  # close port
-    msg = "The serial port has been closed"
+    msg = "The serial port has been closed."
     statusText.set(msg)
     message.configure(fg="dark green")
     message.update()
-
     
   def button_browse_callback():
     filename = tkFileDialog.askopenfilename()
@@ -163,7 +138,7 @@ def gui():
   
   window = Tk()
   window.title("Wieting ETC Light Controls v1.0")
-  window.geometry("850x750")
+  window.geometry("850x600")
   
   root = Frame(window, padx=10, pady=10)
   root.pack()
@@ -221,13 +196,10 @@ def gui():
   button_exit = Button(panelCMD, text="Exit", command=sys.exit)
   button_exit.pack(side=LEFT)
 
-  #sep = Frame(panelCMD, height=1, width=800, bg="black", pady=5)
-  #sep.pack(side=BOTTOM)
-
   panelStatus = Frame(root, padx=5, pady=5)
   panelStatus.pack()
   
-  message = Label(panelStatus, textvariable=statusText, padx=10, pady=5)
+  message = Label(panelStatus, textvariable=statusText, padx=10, pady=5, font="Helvetica 18")
   message.pack()
   
   # --- Initialize the serial port ----------------------------------
@@ -236,9 +208,8 @@ def gui():
     
   try:
     ser = serial.Serial(dev, baudrate=115200, bytesize=8, parity='N', stopbits=1, xonxoff=1)  # open serial port
-    statusText.set("Serial port '{}' is open...".format(ser.port))  # the port ID
-    message.configure(fg="dark green")
-    message.update()
+    msg = "Serial port '{}' is open.  Faders set to percentage (0-100) control mode.".format(ser.port)  # the port ID
+    send_serial_string(ser, 'SC3.1\r\n', statusText, message, msg)
   except:
     ser = FALSE
     msg = "Serial connection error: {}".format(sys.exc_info()[0])
