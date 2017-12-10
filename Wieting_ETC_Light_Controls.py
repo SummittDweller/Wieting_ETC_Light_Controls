@@ -54,7 +54,7 @@ def gui():
     sleep(1)  # wait one second
     bytesToRead = ser.inWaiting()
     result = ser.read(bytesToRead)
-    stripped = re.sub(r"\r\n", ", ", result)
+    stripped = re.sub(r"\r\n", ",", result)
     return stripped
   
   def send_serial_string(ser, code):
@@ -72,7 +72,21 @@ def gui():
       msg = "The port is not open.  send_serial_string() called with code '{0}'.".format(stripped)
       set_status(msg, type="ERROR")
       return FALSE
-  
+
+  def parse_fader_values(response):
+    values = {}
+    RFs = response.split(",")
+    pattern = re.compile(r"RF(\d*).(\d*).(\d*)")
+    for setting in RFs:
+      if setting:
+        m = re.match(pattern, setting)
+        if m:
+          values[int(m.group(1))] = int(m.group(2))
+        else:
+          msg = "String '{}' does not appear to be a fader setting.".format(setting)
+          set_status(msg, type="ERROR")
+    return values
+
   # --- Declare some lists
   
   faderFrames = []
@@ -100,13 +114,12 @@ def gui():
     desc = re.sub(r"\n", " ", labels[fadr])
     lvl = faders[fadr].get()
     code = "SF{0}.{1}".format(fadr, lvl) + "\r\n"
-    response = send_serial_string(ser, code)
-    if response:
-      msg = "Set fader '{0}' to level '{1}'.  Response:\n{2}".format(desc, lvl, response)
-      set_status(msg)
-    else:
-      msg = "Set fader '{0}' to level '{1}' failed!".format(desc, lvl)
-      set_status(msg, type="ERROR")
+    response = send_serial_string(ser, code)       # response here is normally EMPTY!
+    msg = "Set fader '{0}' to level '{1}'.  Response:\n{2}".format(desc, lvl, response)
+    set_status(msg)
+    #else:
+    #  msg = "Set fader '{0}' to level '{1}' failed!".format(desc, lvl)
+    #  set_status(msg, type="ERROR")
 
   def set_preset_callback(preset, labels):
     p = preset + 1
@@ -150,6 +163,31 @@ def gui():
     entry.delete(0, END)
     entry.insert(0, filename)
 
+  # --- Initialize the serial port ----------------------------------
+
+  dev = "/dev/tty.usbserial"
+
+  try:
+    ser = serial.Serial(dev, baudrate=115200, bytesize=8, parity='N', stopbits=1, xonxoff=1)  # open serial port
+    response = send_serial_string(ser, 'SC3.1\r\nGF0\r\n')
+    if response:
+      msg = "Serial port '{0}' is open.\nFaders set to percentage (0-100) control mode.\n" \
+            "Fader settings follow:\n{1}".format(ser.port, response)  # the port ID and response
+      type = "INFO"
+      #set_status(msg)
+
+      fvals = parse_fader_values(response)
+
+    else:
+      msg = "Serial port '{}' opened but it failed to initialize properly.".format(ser.port)  # the port ID
+      type = "ERROR"
+      #set_status(msg, type="ERROR")
+
+  except:
+    ser = FALSE
+    msg = "Serial connection error: {}".format(sys.exc_info()[0])
+    type = "ERROR"
+    #set_status(msg, type="ERROR")
 
   # --- Build the GUI ---------------------------------------------------------
   
@@ -171,6 +209,7 @@ def gui():
     faderFrames[f].pack(side=LEFT)
     faderScales.append(Scale(faderFrames[f], from_=100, to=0))
     setFaderButtons.append(Button(faderFrames[f], text="Set", command=functools.partial(set_fader_callback, f, faderScales, faderLabels)))
+    faderScales[f].set(fvals[f+1])
     faderScales[f].pack()
     setFaderButtons[f].pack()
 
@@ -218,33 +257,9 @@ def gui():
   
   message = Label(panelStatus, textvariable=statusText, padx=10, pady=5, font="Helvetica 18")
   message.pack()
-  
-  # --- Initialize the serial port ----------------------------------
-    
-  dev = "/dev/tty.usbserial"
-    
-  try:
-    ser = serial.Serial(dev, baudrate=115200, bytesize=8, parity='N', stopbits=1, xonxoff=1)  # open serial port
-    response = send_serial_string(ser, 'SC3.1\r\nGF0\r\n')
-    if response:
-      msg = "Serial port '{}' is open.  Faders set to percentage (0-100) control mode.  Fader settings " \
-            "follow:\n".format(ser.port, response)  # the port ID and response
-      set_status(msg)
-      
-      fvals = parse_fader_values(response)
-      #for f in range(7):
-      #  fval = parse_fader_value(f)
-      #  faderScales[f].set(fval)
 
-    else:
-      msg = "Serial port '{}' opened but it failed to initialize properly.".format(ser.port)  # the port ID
-      set_status(msg, type="ERROR")
+  set_status(msg, type)
 
-  except:
-    ser = FALSE
-    msg = "Serial connection error: {}".format(sys.exc_info()[0])
-    set_status(msg, type="ERROR")
-    
   mainloop()
 
 # -----------------------------------------------------
@@ -252,13 +267,4 @@ def gui():
 if __name__ == "__main__":
   gui()  # run the GUI
 
-def parse_fader_values(response):
-  values = []
-  RFs = response.split(",")
-  pattern = re.compile(r"RF (\d\d).(\d\d).(\d\d)")
-  for setting in RFs:
-    m = re.match(pattern, setting)
-    if m:
-      values.append(m.group(1))
-    
 
