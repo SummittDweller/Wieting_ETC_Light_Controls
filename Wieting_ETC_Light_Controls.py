@@ -36,40 +36,42 @@ import functools
 from Tkinter import *  # use 'brew install homebrew/dupes/tcl-tk' to install
 from time import sleep
 
-# --- Helper functions
-
-def read_serial_response(ser):
-  sleep(1)  # wait one second
-  bytesToRead = ser.inWaiting()
-  result = ser.read(bytesToRead)
-  stripped = re.sub(r"\r\n", ", ", result)
-  return stripped
-
-def send_serial_string(ser, code, statusText, message, msg):
-  if ser:
-    try:
-      ser.write(code)
-      result = read_serial_response(ser)
-      m = msg
-      statusText.set(m + " Response is: {}".format(result))
-      message.configure(fg="dark green")
-      message.update()
-    except:
-      m = "Serial connection error: {}".format(sys.exc_info()[0])
-      statusText.set(m)
-      message.configure(fg="red")
-      message.update()
-  else:
-    stripped = re.sub(r"\r\n", "", code)
-    m = "The port is not open.  send_serial_string() called with code '{0}' and message:\n{1}".format(stripped, msg)
-    statusText.set(m)
-    message.configure(fg="red")
-    message.update()
-
-
 # --- Define the GUI -----------------------------------------------------------------
 
 def gui():
+  
+  # --- Helper functions
+  
+  def set_status(msg, type="INFO"):
+    statusText.set(msg)
+    if type == "ERROR":
+      message.configure(fg="red")
+    else:
+      message.configure(fg="dark green")
+    message.update()
+  
+  def read_serial_response(ser):
+    sleep(1)  # wait one second
+    bytesToRead = ser.inWaiting()
+    result = ser.read(bytesToRead)
+    stripped = re.sub(r"\r\n", ", ", result)
+    return stripped
+  
+  def send_serial_string(ser, code):
+    if ser:
+      try:
+        ser.write(code)
+        result = read_serial_response(ser)
+        return result
+      except:
+        msg = "Serial connection error: {}".format(sys.exc_info()[0])
+        set_status(msg, type="ERROR")
+        return FALSE
+    else:
+      stripped = re.sub(r"\r\n", "", code)
+      msg = "The port is not open.  send_serial_string() called with code '{0}'.".format(stripped)
+      set_status(msg, type="ERROR")
+      return FALSE
   
   # --- Declare some lists
   
@@ -98,35 +100,50 @@ def gui():
     desc = re.sub(r"\n", " ", labels[fadr])
     lvl = faders[fadr].get()
     code = "SF{0}.{1}".format(fadr, lvl) + "\r\n"
-    msg = "Set Fader for '{0}' to Level '{1}'.".format(desc, lvl)
-    send_serial_string(ser, code, statusText, message, msg)
+    response = send_serial_string(ser, code)
+    if response:
+      msg = "Set fader '{0}' to level '{1}'.  Response:\n{2}".format(desc, lvl, response)
+      set_status(msg)
+    else:
+      msg = "Set fader '{0}' to level '{1}' failed!".format(desc, lvl)
+      set_status(msg, type="ERROR")
 
   def set_preset_callback(preset, labels):
     p = preset + 1
     desc = re.sub(r"\n", " ", labels[preset])
     code = "SB{0}.2".format(p) + "\r\n"
-    msg = "Toggled Preset '{0}'.".format(desc)
-    send_serial_string(ser, code, statusText, message, msg)
+    response = send_serial_string(ser, code)
+    if response:
+      msg = "Successfully toggled preset '{0}'.  Response:\n{1}".format(desc, response)
+      set_status(msg)
+    else:
+      msg = "Toggle preset '{0}' failed!".format(desc)
+      set_status(msg, type="ERROR")
+
 
   def button_help_callback():
     filename = "./Wieting_ETC_Light_Controls.md.html"
     webbrowser.open('file://' + os.path.realpath(filename))
-    statusText.set("The help file, 'Wieting_ETC_Light_Controls.md.html' should now be visible in a new browser tab.")
-    message.configure(fg="dark green")
+    set_status("The help file, 'Wieting_ETC_Light_Controls.md.html' should now be visible in a new browser tab.")
+    
     
   def button_send_raw_callback():
     raw = entry.get()
     code = "{0}\r\n".format(raw)
-    msg = "Raw command '{0}' sent.".format(raw)
-    send_serial_string(ser, code, statusText, message, msg)
+    response = send_serial_string(ser, code)
+    stripped = re.sub(r"\r\n", ", ", code)
+    if response:
+      msg = "Raw command '{0}' successfully sent.  Response:\n{1}".format(stripped, response)
+      set_status(msg)
+    else:
+      msg = "Raw command '{0}' failed!.".format(stripped)
+      set_status(msg, type="ERROR")
 
   def button_close_port_callback():
     if ser:
       ser.close()  # close port
     msg = "The serial port has been closed."
-    statusText.set(msg)
-    message.configure(fg="dark green")
-    message.update()
+    set_status(msg)
     
   def button_browse_callback():
     filename = tkFileDialog.askopenfilename()
@@ -169,7 +186,7 @@ def gui():
   
   statusText = StringVar(panelRaw)
   statusText.set("Browse to open a file OR enter a Unison AV/Serial 1.0 command...")
-    
+  
   label = Label(panelRaw, text="Enter a serial string (Raw Command) or Browse for a file to playback:", padx=10)
   label.pack()
   entry = Entry(panelRaw, width=96, justify='center')
@@ -208,14 +225,19 @@ def gui():
     
   try:
     ser = serial.Serial(dev, baudrate=115200, bytesize=8, parity='N', stopbits=1, xonxoff=1)  # open serial port
-    msg = "Serial port '{}' is open.  Faders set to percentage (0-100) control mode.".format(ser.port)  # the port ID
-    send_serial_string(ser, 'SC3.1\r\n', statusText, message, msg)
+    response = send_serial_string(ser, 'SC3.1\r\nGF0\r\n', msg)
+    if response:
+      msg = "Serial port '{}' is open.  Faders set to percentage (0-100) control mode.  Fader settings " \
+            "follow:\n".format(ser.port, response)  # the port ID and response
+      set_status(msg)
+    else:
+      msg = "Serial port '{}' opened but it failed to initialize properly.".format(ser.port)  # the port ID
+      set_status(msg, type="ERROR")
+
   except:
     ser = FALSE
     msg = "Serial connection error: {}".format(sys.exc_info()[0])
-    statusText.set(msg)
-    message.configure(fg="red")
-    message.update()
+    set_status(msg, type="ERROR")
     
   mainloop()
 
