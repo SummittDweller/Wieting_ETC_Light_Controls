@@ -38,8 +38,10 @@ from time import sleep
 
 # --- Some control constants
 
+testing = False     # Set True when testing away from the ETC controls, or False for real use.
 port = "/dev/tty.usbserial"
-lastFader = 6                 # The largest fader number that controlled. Zero index is the master.
+numFaders = 7                 # The number of faders that can be controlled. Index 0 is the master.
+folder = "~/Documents/FaderSettings"
 
 # --- Define the GUI -----------------------------------------------------------------
 
@@ -57,20 +59,23 @@ def gui():
 
   
   def read_serial_response(ser):
+    if testing:
+      return "Test mode is ON"
     sleep(1)  # wait one second
     bytesToRead = ser.inWaiting()
     result = ser.read(bytesToRead)
     stripped = re.sub(r"\r\n", ",", result)
-    info = (stripped[:75] + '...') if len(stripped) > 75 else stripped
-    return info
+    return stripped
 
   
   def send_serial_string(ser, code):
+    if testing:
+      return "Test mode is ON"
     if ser:
       try:
         ser.write(code)
         result = read_serial_response(ser)
-        return result
+        return result.strip(",")
       except:
         msg = "Serial connection error: {}".format(sys.exc_info()[0])
         set_status(msg, type="ERROR")
@@ -83,14 +88,20 @@ def gui():
 
 
   def parse_fader_values(response):
-    values = {}
+    if testing:
+      return [0,10,20,30,40,50,100]
+    values = []
+    for f in faders:
+      values.append(0)
     RFs = response.split(",")
     pattern = re.compile(r"RF(\d*).(\d*).(\d*)")
     for setting in RFs:
       if setting:
         m = re.match(pattern, setting)
         if m:
-          values[int(m.group(1))] = int(m.group(2))
+          f = int(m.group(1))
+          if f in faders:
+            values[f] = int(m.group(2))
         else:
           msg = "String '{}' does not appear to be a fader setting.".format(setting)
           set_status(msg, type="ERROR")
@@ -118,11 +129,28 @@ def gui():
                   "Undefined",
                   "All Off"]
 
-  for f in range(lastFader):
+  faders = range(numFaders)
+  for f in faders:
     faderVals.append(0)
+
+  ftypes = [('Fader files', '.fad')]
 
   # --- Define the callback functions
     
+  def button_sync_fader_scales_callback(values, scales):
+    if testing:
+      values = [100,90,80,70,60,50,0]
+    else:
+      response = send_serial_string(ser, 'GF0\r\n')
+      if response:
+        values = parse_fader_values(response)
+      else:
+        set_status("Unable to sync fader scales.", "ERROR")
+        return
+    for f in faders:
+      scales[f].set(values[f])
+
+
   def set_fader_callback(fadr, faders, labels):
     desc = re.sub(r"\n", " ", labels[fadr])
     lvl = faders[fadr].get()
@@ -130,6 +158,13 @@ def gui():
     response = send_serial_string(ser, code)       # response here is normally EMPTY!
     msg = "Set fader '{0}' to level '{1}'.  Response: {2}".format(desc, lvl, response)
     set_status(msg)
+
+
+  def button_set_fader_profile_callback(faders, faderScales):
+    for f in faders:
+      lvl = faderScales[f].get()
+      code = "SF{0}.{1}".format(f, lvl) + "\r\n"
+      response = send_serial_string(ser, code)       # response here is normally EMPTY!
 
 
   def set_preset_callback(preset, labels):
@@ -155,12 +190,13 @@ def gui():
     raw = entry.get()
     code = "{0}\r\n".format(raw)
     response = send_serial_string(ser, code)
-    stripped = re.sub(r"\r\n", ", ", code)
+    stripped = re.sub(r"\r\n", ", ", response)
+    info = (stripped[:75] + '...') if len(stripped) > 75 else stripped
     if response:
-      msg = "Raw command '{0}' successfully sent.  Response:\n{1}".format(stripped, response)
+      msg = "Raw command '{0}' successfully sent.  Response:\n{1}".format(raw, info)
       set_status(msg)
     else:
-      msg = "Raw command '{0}' failed!.".format(stripped)
+      msg = "Raw command '{0}' failed!.".format(raw)
       set_status(msg, type="ERROR")
 
 
@@ -171,10 +207,26 @@ def gui():
     set_status(msg)
 
     
-  def button_browse_callback():
-    filename = tkFileDialog.askopenfilename()
+  def button_load_faders_callback():
+    filename = tkFileDialog.askopenfilename(initialdir=folder, filetypes = ftypes)
+    with open(filename, 'r') as file:
+      faderVals = [line.rstrip('\n') for line in file]
     entry.delete(0, END)
     entry.insert(0, filename)
+    for f in faders[1:]:          # skip faders[0]!
+      code = "SF{0}.{1}".format(f, faderVals[f]) + "\r\n"
+      response = send_serial_string(ser, code)  # response here is normally EMPTY!
+
+
+  def button_save_faders_callback():
+    ftypes = [('Fader files', '.fad')]
+    filename = tkFileDialog.asksaveasfilename(initialdir=folder,  filetypes=ftypes, defaultextension='.fad')
+    with open(filename, 'w') as f:
+      for v in faderVals:
+        f.write("{}\n".format(v))
+    entry.delete(0, END)
+    entry.insert(0, filename)
+
 
   # --- Initialize the serial port ----------------------------------
 
@@ -182,8 +234,9 @@ def gui():
     ser = serial.Serial(port, baudrate=115200, bytesize=8, parity='N', stopbits=1, xonxoff=1)  # open serial port
     response = send_serial_string(ser, 'SC3.1\r\nGF0\r\n')
     if response:
+      info = (response[:75] + '...') if len(response) > 75 else response
       msg = "Serial port '{0}' is open.\nFaders set to percentage (0-100) control mode.\n" \
-            "Fader settings follow:\n{1}".format(ser.port, response)  # the port ID and response
+            "Fader settings follow:\n{1}".format(ser.port, info)  # the port ID and response
       type = "INFO"
 
       faderVals = parse_fader_values(response)
@@ -212,7 +265,7 @@ def gui():
   fadersFrame = LabelFrame(panelFaders, text="Zones", padx=5, pady=5)
   fadersFrame.pack(side=LEFT)
 
-  for f in range(lastFader):
+  for f in faders:
     faderFrames.append(LabelFrame(fadersFrame, text=faderLabels[f], padx=20, pady=10))
     faderFrames[f].pack(side=LEFT)
     faderScales.append(Scale(faderFrames[f], from_=100, to=0))
@@ -224,17 +277,23 @@ def gui():
   presetsFrame = Frame(panelFaders, padx=5, pady=5)
   presetsFrame.pack(side=RIGHT)
 
+  button_set_fader_profile = Button(presetsFrame, text="Set Fader Profile", command=functools.partial(button_set_fader_profile_callback, faders, faderScales))
+  button_set_fader_profile.pack()
+
+  sep = Frame(presetsFrame, height=1, width=80, bg="black")
+  sep.pack(pady=5)
+
   for p in range(5):
     setPresetButtons.append(Button(presetsFrame, text=presetLabels[p], command=functools.partial(set_preset_callback, p, presetLabels)))
     setPresetButtons[p].pack()
-    
+
   panelRaw = Frame(root, padx=5, pady=5, bd=5)
   panelRaw.pack()
   
   statusText = StringVar(panelRaw)
-  statusText.set("Browse to open a file OR enter a Unison AV/Serial 1.0 command...")
+  statusText.set("Load to open a file OR enter a Unison AV/Serial 1.0 command...")
   
-  label = Label(panelRaw, text="Enter a serial string (Raw Command) or Browse for a file to playback:", padx=10)
+  label = Label(panelRaw, text="Enter a serial string (Raw Command) or Load a file to playback:", padx=10)
   label.pack()
   entry = Entry(panelRaw, width=96, justify='center')
   entry.pack()
@@ -242,10 +301,15 @@ def gui():
   panelRawSub = Frame(panelRaw, padx=5)
   panelRawSub.pack()
   
+  button_read_faders = Button(panelRawSub, text="Load Fader Values", command=button_load_faders_callback)
+  button_read_faders.pack(side=LEFT)
+  button_save_faders = Button(panelRawSub, text="Save Fader Values", command=button_save_faders_callback)
+  button_save_faders.pack(side=LEFT)
+  button_sync_fader_scales = Button(panelRawSub, text="Sync Fader Scales",
+                                    command=functools.partial(button_sync_fader_scales_callback, faderVals, faderScales))
+  button_sync_fader_scales.pack(side=LEFT)
   button_send_raw = Button(panelRawSub, text="Send Raw Command", command=button_send_raw_callback)
   button_send_raw.pack(side=LEFT)
-  button_browse = Button(panelRawSub, text="Browse", command=button_browse_callback)
-  button_browse.pack(side=LEFT)
 
   sep = Frame(panelRaw, height=1, width=800, bg="black")
   sep.pack(pady=10)
