@@ -225,11 +225,17 @@ def gui():
     
   try:
     ser = serial.Serial(dev, baudrate=115200, bytesize=8, parity='N', stopbits=1, xonxoff=1)  # open serial port
-    response = send_serial_string(ser, 'SC3.1\r\nGF0\r\n', msg)
+    response = send_serial_string(ser, 'SC3.1\r\nGF0\r\n')
     if response:
       msg = "Serial port '{}' is open.  Faders set to percentage (0-100) control mode.  Fader settings " \
             "follow:\n".format(ser.port, response)  # the port ID and response
       set_status(msg)
+      
+      # @TODO...complete this!
+      #for f in range(7):
+      #  fval = parse_fader_value(f)
+      #  faderScales[f].set(fval)
+
     else:
       msg = "Serial port '{}' opened but it failed to initialize properly.".format(ser.port)  # the port ID
       set_status(msg, type="ERROR")
