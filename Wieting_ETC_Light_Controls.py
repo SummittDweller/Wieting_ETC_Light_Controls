@@ -36,6 +36,11 @@ import functools
 from Tkinter import *  # use 'brew install homebrew/dupes/tcl-tk' to install
 from time import sleep
 
+# --- Some control constants
+
+port = "/dev/tty.usbserial"
+lastFader = 6                 # The largest fader number that controlled. Zero index is the master.
+
 # --- Define the GUI -----------------------------------------------------------------
 
 def gui():
@@ -49,13 +54,16 @@ def gui():
     else:
       message.configure(fg="dark green")
     message.update()
+
   
   def read_serial_response(ser):
     sleep(1)  # wait one second
     bytesToRead = ser.inWaiting()
     result = ser.read(bytesToRead)
     stripped = re.sub(r"\r\n", ",", result)
-    return stripped
+    info = (stripped[:75] + '...') if len(stripped) > 75 else stripped
+    return info
+
   
   def send_serial_string(ser, code):
     if ser:
@@ -72,6 +80,7 @@ def gui():
       msg = "The port is not open.  send_serial_string() called with code '{0}'.".format(stripped)
       set_status(msg, type="ERROR")
       return FALSE
+
 
   def parse_fader_values(response):
     values = {}
@@ -91,6 +100,7 @@ def gui():
   
   faderFrames = []
   faderScales = []
+  faderVals = []
   setFaderButtons = []
   setPresetButtons = []
   
@@ -108,6 +118,9 @@ def gui():
                   "Undefined",
                   "All Off"]
 
+  for f in range(lastFader):
+    faderVals.append(0)
+
   # --- Define the callback functions
     
   def set_fader_callback(fadr, faders, labels):
@@ -115,11 +128,9 @@ def gui():
     lvl = faders[fadr].get()
     code = "SF{0}.{1}".format(fadr, lvl) + "\r\n"
     response = send_serial_string(ser, code)       # response here is normally EMPTY!
-    msg = "Set fader '{0}' to level '{1}'.  Response:\n{2}".format(desc, lvl, response)
+    msg = "Set fader '{0}' to level '{1}'.  Response: {2}".format(desc, lvl, response)
     set_status(msg)
-    #else:
-    #  msg = "Set fader '{0}' to level '{1}' failed!".format(desc, lvl)
-    #  set_status(msg, type="ERROR")
+
 
   def set_preset_callback(preset, labels):
     p = preset + 1
@@ -152,11 +163,13 @@ def gui():
       msg = "Raw command '{0}' failed!.".format(stripped)
       set_status(msg, type="ERROR")
 
+
   def button_close_port_callback():
     if ser:
       ser.close()  # close port
     msg = "The serial port has been closed."
     set_status(msg)
+
     
   def button_browse_callback():
     filename = tkFileDialog.askopenfilename()
@@ -165,29 +178,24 @@ def gui():
 
   # --- Initialize the serial port ----------------------------------
 
-  dev = "/dev/tty.usbserial"
-
   try:
-    ser = serial.Serial(dev, baudrate=115200, bytesize=8, parity='N', stopbits=1, xonxoff=1)  # open serial port
+    ser = serial.Serial(port, baudrate=115200, bytesize=8, parity='N', stopbits=1, xonxoff=1)  # open serial port
     response = send_serial_string(ser, 'SC3.1\r\nGF0\r\n')
     if response:
       msg = "Serial port '{0}' is open.\nFaders set to percentage (0-100) control mode.\n" \
             "Fader settings follow:\n{1}".format(ser.port, response)  # the port ID and response
       type = "INFO"
-      #set_status(msg)
 
-      fvals = parse_fader_values(response)
+      faderVals = parse_fader_values(response)
 
     else:
       msg = "Serial port '{}' opened but it failed to initialize properly.".format(ser.port)  # the port ID
       type = "ERROR"
-      #set_status(msg, type="ERROR")
 
   except:
     ser = FALSE
     msg = "Serial connection error: {}".format(sys.exc_info()[0])
     type = "ERROR"
-    #set_status(msg, type="ERROR")
 
   # --- Build the GUI ---------------------------------------------------------
   
@@ -204,12 +212,12 @@ def gui():
   fadersFrame = LabelFrame(panelFaders, text="Zones", padx=5, pady=5)
   fadersFrame.pack(side=LEFT)
 
-  for f in range(7):
+  for f in range(lastFader):
     faderFrames.append(LabelFrame(fadersFrame, text=faderLabels[f], padx=20, pady=10))
     faderFrames[f].pack(side=LEFT)
     faderScales.append(Scale(faderFrames[f], from_=100, to=0))
     setFaderButtons.append(Button(faderFrames[f], text="Set", command=functools.partial(set_fader_callback, f, faderScales, faderLabels)))
-    faderScales[f].set(fvals[f+1])
+    faderScales[f].set(faderVals[f])
     faderScales[f].pack()
     setFaderButtons[f].pack()
 
