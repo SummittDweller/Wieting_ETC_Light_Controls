@@ -231,7 +231,7 @@ def gui():
             "follow:\n".format(ser.port, response)  # the port ID and response
       set_status(msg)
       
-      # @TODO...complete this!
+      fvals = parse_fader_values(response)
       #for f in range(7):
       #  fval = parse_fader_value(f)
       #  faderScales[f].set(fval)
@@ -251,4 +251,14 @@ def gui():
 
 if __name__ == "__main__":
   gui()  # run the GUI
+
+def parse_fader_values(response):
+  values = []
+  RFs = response.split(",")
+  pattern = re.compile(r"RF (\d\d).(\d\d).(\d\d)")
+  for setting in RFs:
+    m = re.match(pattern, setting)
+    if m:
+      values.append(m.group(1))
+    
 
