@@ -38,9 +38,9 @@ from time import sleep
 
 # --- Some control constants
 
-testing = False     # Set True when testing away from the ETC controls, or False for real use.
+testing = False             # Set True when testing away from the ETC controls, or False for real use.
+numFaders = 7               # The number of faders that can be controlled. Index 0 is the master.
 port = "/dev/tty.usbserial"
-numFaders = 7                 # The number of faders that can be controlled. Index 0 is the master.
 folder = "~/Documents/FaderSettings"
 
 # --- Define the GUI -----------------------------------------------------------------
@@ -216,6 +216,7 @@ def gui():
     for f in faders[1:]:          # skip faders[0]!
       code = "SF{0}.{1}".format(f, faderVals[f]) + "\r\n"
       response = send_serial_string(ser, code)  # response here is normally EMPTY!
+      faderScales[f].set(faderVals[f])
 
 
   def button_save_faders_callback():
