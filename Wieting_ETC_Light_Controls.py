@@ -112,7 +112,7 @@ def gui():
   faderFrames = []
   faderScales = []
   faderVals = []
-  setFaderButtons = []
+  sendFaderButtons = []
   setPresetButtons = []
   
   faderLabels = ["Master\n Control",
@@ -151,7 +151,7 @@ def gui():
       scales[f].set(values[f])
 
 
-  def button_set_fader_callback(fadr, faders, labels):
+  def button_send_fader_callback(fadr, faders, labels):
     desc = re.sub(r"\n", " ", labels[fadr])
     lvl = faders[fadr].get()
     code = "SF{0}.{1}".format(fadr, lvl) + "\r\n"
@@ -160,7 +160,7 @@ def gui():
     set_status(msg)
 
 
-  def button_set_fader_profile_callback(faders, faderScales):
+  def button_send_fader_profile_callback(faders, faderScales):
     msg = "Faders (zones) set to "
     for f in faders[1:]:                 # don't set the master (0) fader here!
       lvl = faderScales[f].get()
@@ -170,7 +170,7 @@ def gui():
     set_status(msg.strip("-") + ".")
 
 
-  def set_preset_callback(preset, labels):
+  def button_set_preset_callback(preset, labels):
     p = preset + 1
     desc = re.sub(r"\n", " ", labels[preset])
     code = "SB{0}.2".format(p) + "\r\n"
@@ -258,7 +258,7 @@ def gui():
   
   window = Tk()
   window.title("Wieting ETC Light Controls v1.0")
-  window.geometry("850x600")
+  window.geometry("950x600")
   
   root = Frame(window, padx=10, pady=10)
   root.pack()
@@ -273,29 +273,29 @@ def gui():
     faderFrames.append(LabelFrame(fadersFrame, text=faderLabels[f], padx=20, pady=10))
     faderFrames[f].pack(side=LEFT)
     faderScales.append(Scale(faderFrames[f], from_=100, to=0))
-    setFaderButtons.append(Button(faderFrames[f], text="Set", command=functools.partial(button_set_fader_callback, f, faderScales, faderLabels)))
+    sendFaderButtons.append(Button(faderFrames[f], text="Send", command=functools.partial(button_send_fader_callback, f, faderScales, faderLabels)))
     faderScales[f].set(faderVals[f])
     faderScales[f].pack()
-    setFaderButtons[f].pack()
+    sendFaderButtons[f].pack()
 
   presetsFrame = Frame(panelFaders, padx=5, pady=5)
   presetsFrame.pack(side=RIGHT)
 
-  button_set_fader_profile = Button(presetsFrame, text="Set Fader Profile", command=functools.partial(button_set_fader_profile_callback, faders, faderScales))
-  button_set_fader_profile.pack()
+  button_send_fader_profile = Button(presetsFrame, text="Send Fader Profile", command=functools.partial(button_send_fader_profile_callback, faders, faderScales))
+  button_send_fader_profile.pack()
 
   sep = Frame(presetsFrame, height=1, width=80, bg="black")
   sep.pack(pady=5)
 
   for p in range(5):
-    setPresetButtons.append(Button(presetsFrame, text=presetLabels[p], command=functools.partial(set_preset_callback, p, presetLabels)))
+    setPresetButtons.append(Button(presetsFrame, text=presetLabels[p], command=functools.partial(button_set_preset_callback, p, presetLabels)))
     setPresetButtons[p].pack()
 
   panelRaw = Frame(root, padx=5, pady=5, bd=5)
   panelRaw.pack()
   
   statusText = StringVar(panelRaw)
-  statusText.set("Load to open a file OR enter a Unison AV/Serial 1.0 command...")
+  statusText.set("Load to open a file OR enter a Unison AV/Serial command...")
   
   label = Label(panelRaw, text="Enter a serial string (Raw Command) or Load a file to playback:", padx=10)
   label.pack()
