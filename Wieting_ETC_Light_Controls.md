@@ -1,7 +1,9 @@
-# Backup \_Archived\_EMail_ from Mark's MacBook
+# Wieting ETC Light Controls
 
-This button completes step 4 in the documented workflow for archival of PDF files created from email
-messages (mailboxes) on Mark's MacBook.
+This is an application written in Python 2.7 and intended to provide control of the Wieting's ETC Unison Heritage house and stage lights.
+
+
+
 The affected Mail.app mailboxes in  /Users/mark/Library/V3 may include:
 
   * mark@TamaToledo.net

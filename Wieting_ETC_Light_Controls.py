@@ -33,15 +33,15 @@ import os.path
 import webbrowser
 import serial   # use 'pip install pyserial' to install
 import functools
-from Tkinter import *  # use 'brew install homebrew/dupes/tcl-tk' to install
+from Tkinter import *   # not a pip package... 'sudo apt-get install python-tk' to install
 from time import sleep
 
 # --- Some control constants
 
-testing = False             # Set True when testing away from the ETC controls, or False for real use.
+testing = True              # Set True when testing away from the ETC controls, or False for real use.
 numFaders = 7               # The number of faders that can be controlled. Index 0 is the master.
 port = "/dev/tty.usbserial"
-folder = "~/Documents/FaderSettings"
+folder = "~/FaderSettings"
 
 # --- Define the GUI -----------------------------------------------------------------
 
@@ -79,12 +79,12 @@ def gui():
       except:
         msg = "Serial connection error: {}".format(sys.exc_info()[0])
         set_status(msg, type="ERROR")
-        return FALSE
+        return False
     else:
       stripped = re.sub(r"\r\n", "", code)
       msg = "The port is not open.  send_serial_string() called with code '{0}'.".format(stripped)
       set_status(msg, type="ERROR")
-      return FALSE
+      return False
 
 
   def parse_fader_values(response):
@@ -151,7 +151,7 @@ def gui():
       scales[f].set(values[f])
 
 
-  def set_fader_callback(fadr, faders, labels):
+  def button_set_fader_callback(fadr, faders, labels):
     desc = re.sub(r"\n", " ", labels[fadr])
     lvl = faders[fadr].get()
     code = "SF{0}.{1}".format(fadr, lvl) + "\r\n"
@@ -161,10 +161,13 @@ def gui():
 
 
   def button_set_fader_profile_callback(faders, faderScales):
-    for f in faders:
+    msg = "Faders (zones) set to "
+    for f in faders[1:]:                 # don't set the master (0) fader here!
       lvl = faderScales[f].get()
       code = "SF{0}.{1}".format(f, lvl) + "\r\n"
       response = send_serial_string(ser, code)       # response here is normally EMPTY!
+      msg = msg + "{}-".format(lvl)
+    set_status(msg.strip("-") + ".")
 
 
   def set_preset_callback(preset, labels):
@@ -247,7 +250,7 @@ def gui():
       type = "ERROR"
 
   except:
-    ser = FALSE
+    ser = False
     msg = "Serial connection error: {}".format(sys.exc_info()[0])
     type = "ERROR"
 
@@ -270,7 +273,7 @@ def gui():
     faderFrames.append(LabelFrame(fadersFrame, text=faderLabels[f], padx=20, pady=10))
     faderFrames[f].pack(side=LEFT)
     faderScales.append(Scale(faderFrames[f], from_=100, to=0))
-    setFaderButtons.append(Button(faderFrames[f], text="Set", command=functools.partial(set_fader_callback, f, faderScales, faderLabels)))
+    setFaderButtons.append(Button(faderFrames[f], text="Set", command=functools.partial(button_set_fader_callback, f, faderScales, faderLabels)))
     faderScales[f].set(faderVals[f])
     faderScales[f].pack()
     setFaderButtons[f].pack()
