@@ -526,9 +526,9 @@ pre.editor-colors .fold-marker:after {
 }
 </style>
   </head>
-  <body class='markdown-preview' data-use-github-style><h1 id="wieting-etc-light-controls">Wieting ETC Light Controls</h1>
+  <body class='markdown-preview' data-use-github-style><h1>Wieting ETC Light Controls</h1>
 <p>This is an application written in Python 2.7 and intended to provide control of the Wieting's ETC Unison Heritage house and stage lights.</p>
-<h2 id="graphical-user-interface-gui-">Graphical User Interface (GUI)</h2>
+<h2>Graphical User Interface (GUI)</h2>
 <p><img title="Graphical User Interface" alt="Graphical User Interface" src="/Users/markmcfate/Projects/Python/Wieting_ETC_Light_Controls/ETC_Light_Control_GUI.png"></p>
 <p>The GUI is divided into 4 regions stacked vertically in a window. The window regions from top-to-bottom are:</p>
 <ul>
@@ -579,5 +579,34 @@ pre.editor-colors .fold-marker:after {
 <p>This region occupies the bottom 1/3 of the window and provides text feedback to the user. Error or Warning messages appear here in a <strong><span style="color:red">bold red</span></strong> typeface, while all other information appears in <strong><span style="color:green">bold green</span></strong> typeface.</p>
 </li>
 </ul>
-<h2 id="workflow">Workflow</h2></body>
+<h2 id="immediate-light-response">Immediate Light Response</h2>
+<p>There are four ways to trigger an immediate response in the house/stage lights controlled by the Wieting's ETC station:</p>
+<h3>Uniform Control of ALL zones</h3>
+<p>Trigger an immediate response in ALL zones by making a change to "Master Control" zone on the left end of the fader controls, then click the "Send" button immediately below the "Master Control" fader.  All zones will be set to the intensity specified for the "Master Control" fader.</p>
+<h3>Change Intensity of an Individual Zone</h3>
+<p>To trigger an immediate response in a single zone make a change to the appropriate fader scale and click the "Send" button immediately below that fader.</p>
+<h3 id="change-intensity-of-all-zones">Change Intensity of ALL Zones</h3>
+<p>You can trigger all of the zones simultaneously so that each is set to the intensity indicated for their corresponding fader by setting the fader scales and clicking the "Send Fader Profile" button in the top/right corner of the fader controls.  This will set each zone to the intensity displayed on its fader scale.  Note that the "Master Control" fader is ignored when using this option.</p>
+<h3>Using Preset Buttons</h3>
+<p>Five preset buttons appear to the right of the fader controls and below the "Send Fader Profile" button.  These buttons are "programmed" using the wall-mounted ETC control panels in the projection booth and/or backstage.  </p>
+<p>To set all zones to "preset" intensities simply click the desired button.</p>
+<blockquote>
+<p><strong>Important Note</strong><br>  Using a "preset" button will control the lights as desired, but the changes will NOT be reflected in the fader controls within this application, nor will they be reflected in the fader controls on the wall-mounted panels!  This is an ETC issue, not a problem with the software.  </p>
+</blockquote>
+<h2>Synchronizing Fader Scales</h2>
+<p>Since it is possible to control the lights from a number of sources (the ETC wall-mounted control panels, this application, "preset" buttons in the box office), there will be times when the fader scales do NOT reflect the actual intensities of the lights.  Pressing the "Sync Fader Scales" button can help bring the fader scale controls back into "sync" with the physical light settings.</p>
+<blockquote>
+<p><strong>Important Note</strong><br>  As stated before, using a "preset" button will control the lights as desired, but the changes will NOT be reflected in the fader controls, and the "Sync Fader Scales" button will also have NO effect. This is an ETC issue, not a problem with the software.</p>
+</blockquote>
+<h2 id="save-and-replay-load-fader-settings">Save and Replay (Load) Fader settings</h2>
+<p>The "preset" buttons typically provide light intensities designed for different portions of a cinema/feature presentation, but this application provides a similar set of features to achieve similar results for live performances or non-cinema events.  </p>
+<p>Use the "Save Fader Values" button to record the fader scale intensities for all zones and write them to a file, presumably one with a descriptive name.  The file will have a .fad extension and it will be stored on the host computer in a ~/FaderSettings folder.</p>
+<p>Use the "Load Fader Values" button to read and replay fader scale intensities from a previously saved .fad file.  When this button is clicked you prompted to select an existing .fad file from ~/FolderSettings.  As soon as the file is selected and loaded the intensities within are automatically "sent" to the light controller and the lights respond.  Zones are switched in order from left-to-right as shown in the fader controls, and there may be a slight delay (roughly 1 second) between zones.</p>
+<p>There is no need to use the "Sync Fader Scales" or "Send Fader Profiles" when you save or load (replay) a file.  </p>
+<h1>Appendix</h1>
+<p>The following images were lifted from <a href="https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737461037">https://www.etcconnect.com/WorkArea/DownloadAsset.aspx?id=10737461037</a> and they document the raw serial commands and response codes of the ETC serial controller.</p>
+<p><img title="Quick Guide" alt="Quick Guide Part 1" src="/Users/markmcfate/Projects/Python/Wieting_ETC_Light_Controls/ETC_Quick_Guide_1.png">
+<img title="Quick Guide" alt="Quick Guide Part 2" src="/Users/markmcfate/Projects/Python/Wieting_ETC_Light_Controls/ETC_Quick_Guide_2.png">
+<img title="Quick Guide" alt="Quick Guide Part 3" src="/Users/markmcfate/Projects/Python/Wieting_ETC_Light_Controls/ETC_Quick_Guide_3.png">
+<img title="Quick Guide" alt="Quick Guide Part 4" src="/Users/markmcfate/Projects/Python/Wieting_ETC_Light_Controls/ETC_Quick_Guide_4.png"></p></body>
 </html>
