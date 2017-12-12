@@ -82,7 +82,7 @@ Since it is possible to control the lights from a number of sources (the ETC wal
 >**Important Note**  
   As stated before, using a "preset" button will control the lights as desired, but the changes will NOT be reflected in the fader controls, and the "Sync Fader Scales" button will also have NO effect. This is an ETC issue, not a problem with the software.
 
-## Save and Replay (Load) Fader settings
+## Save and Replay (Load) Fader Settings
 The "preset" buttons typically provide light intensities designed for different portions of a cinema/feature presentation, but this application provides a similar set of features to achieve similar results for live performances or non-cinema events.  
 
 Use the "Save Fader Values" button to record the fader scale intensities for all zones and write them to a file, presumably one with a descriptive name.  The file will have a .fad extension and it will be stored on the host computer in a ~/FaderSettings folder.
