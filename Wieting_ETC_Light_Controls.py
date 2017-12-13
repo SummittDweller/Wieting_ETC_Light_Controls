@@ -38,7 +38,7 @@ from time import sleep
 
 # --- Some control constants
 
-testing = True              # Set True when testing away from the ETC controls, or False for real use.
+testing = False             # Set True when testing away from the ETC controls, or False for real use.
 numFaders = 7               # The number of faders that can be controlled. Index 0 is the master.
 port = "/dev/tty.usbserial"
 folder = "~/FaderSettings"
