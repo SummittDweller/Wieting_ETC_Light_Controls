@@ -137,7 +137,7 @@ def gui():
 
   # --- Define the callback functions
     
-  def button_sync_fader_scales_callback(values, scales):
+  def button_sync_fader_scales_callback(scales):
     if testing:
       values = [100,90,80,70,60,50,0]
     else:
@@ -158,6 +158,9 @@ def gui():
     response = send_serial_string(ser, code)       # response here is normally EMPTY!
     msg = "Set fader '{0}' to level '{1}'.  Response: {2}".format(desc, lvl, response)
     set_status(msg)
+    if (fadr == 0):
+      for i in range(1,6):
+        faderScales[i].set(lvl)
 
 
   def button_send_fader_profile_callback(faders, faderScales):
@@ -310,7 +313,7 @@ def gui():
   button_save_faders = Button(panelRawSub, text="Save Fader Values", command=button_save_faders_callback)
   button_save_faders.pack(side=LEFT)
   button_sync_fader_scales = Button(panelRawSub, text="Sync Fader Scales",
-                                    command=functools.partial(button_sync_fader_scales_callback, faderVals, faderScales))
+                                    command=functools.partial(button_sync_fader_scales_callback, faderScales))
   button_sync_fader_scales.pack(side=LEFT)
   button_send_raw = Button(panelRawSub, text="Send Raw Command", command=button_send_raw_callback)
   button_send_raw.pack(side=LEFT)
